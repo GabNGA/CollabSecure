@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CollabSecure - Plataforma Ligera de Colaboración Segura</title>
+    <style>
+        /* ==== ESTILOS BÁSICOS ==== */
+        * {
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f3f4f6;
+        }
+
+        header {
+            background: #1f2933;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
+
+        button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .error {
+            color: #b91c1c;
+            font-size: 0.9rem;
+        }
+
+        .info {
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
+
+        .privacy-box {
+            background: #e5f6ff;
+            border-left: 4px solid #0284c7;
+            padding: 10px 12px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #e5e7eb;
+        }
+
+        .badge {
+            padding: 3px 7px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: white;
+        }
+
+        .badge-pendiente { background: #f97316; }
+        .badge-proceso   { background: #22c55e; }
+        .badge-completo  { background: #6366f1; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>CollabSecure</h1>
+    <p>Plataforma ligera de colaboración segura</p>
+</header>
+
+<main>
+    <!-- ================= SECCIÓN LOGIN ================= -->
+    <section id="login-section" class="section">
+        <h2>Inicio de sesión</h2>
+        <p class="info">
+            Para este proyecto se usa un login sencillo con usuario y contraseña fijos,
+            solo para identificar al equipo (no hay base de datos real).
+        </p>
+
+        <form id="login-form">
+            <label for="username">Usuario</label>
+            <input type="text" id="username" placeholder="Ej: equipo1" required>
+
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="Ej: 1234" required>
+
+            <button type="submit">Entrar</button>
+            <p class="info">Usuario demo: <b>equipo1</b> | Contraseña: <b>1234</b></p>
+            <p id="login-error" class="error"></p>
+        </form>
+    </section>
+
+    <!-- ================ SECCIÓN APLICACIÓN ================ -->
+    <section id="app-section" class="section hidden">
+        <h2>Tablero de tareas / mensajes</h2>
+
+        <!-- Aviso de privacidad (Medida ética) -->
+        <div class="privacy-box">
+            <strong>Aviso de privacidad:</strong> La información registrada aquí es solo
+            para fines académicos. No ingreses datos personales sensibles (número de
+            cédula, contraseñas reales, teléfonos, dirección exacta, etc.). Al usar esta
+            herramienta aceptas que tus datos se manejan de forma responsable.
+        </div>
+
+        <!-- Formulario de nueva tarea/mensaje -->
+        <h3>Registrar nueva tarea / mensaje</h3>
+        <p class="info">
+            Nota: el sistema valida que no haya campos vacíos y filtra algunas palabras
+            ofensivas (medida de seguridad y ética).
+        </p>
+
+        <form id="task-form">
+            <label for="titulo">Título de la tarea / mensaje</label>
+            <input type="text" id="titulo" maxlength="60" placeholder="Ej: Subir informe a la plataforma" required>
+
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" rows="3" maxlength="200" placeholder="Describe brevemente qué hay que hacer"></textarea>
+
+            <label for="responsable">Responsable</label>
+            <input type="text" id="responsable" maxlength="40" placeholder="Nombre del integrante responsable" required>
+
+            <label for="estado">Estado</label>
+            <select id="estado">
+                <option value="Pendiente">Pendiente</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Completo">Completo</option>
+            </select>
+
+            <button type="submit">Agregar al tablero</button>
+            <p id="task-error" class="error"></p>
+        </form>
+
+        <!-- Tabla de tareas -->
+        <h3>Tablero / lista de tareas</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Responsable</th>
+                <th>Estado</th>
+            </tr>
+            </thead>
+            <tbody id="task-table-body">
+            <!-- Aquí se insertan las filas desde JavaScript -->
+            </tbody>
+        </table>
+    </section>
+</main>
+
+<script>
+    // ==== LOGIN BÁSICO (medida de seguridad: autenticación simple) ====
+    var LOGIN_USER = "equipo1";
+    var LOGIN_PASS = "1234";
+
+    var loginForm = document.getElementById("login-form");
+    var loginError = document.getElementById("login-error");
+    var loginSection = document.getElementById("login-section");
+    var appSection = document.getElementById("app-section");
+
+    loginForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        var username = document.getElementById("username").value.trim();
+        var password = document.getElementById("password").value.trim();
+
+        if (username === LOGIN_USER && password === LOGIN_PASS) {
+            // Simulación de "cifrado" de contraseña (solo demostración, no real)
+            var fakeHash = btoa(password); // convierte a base64
+            console.log("Contraseña cifrada (simulada, solo demo):", fakeHash);
+
+            loginError.textContent = "";
+            loginSection.classList.add("hidden");
+            appSection.classList.remove("hidden");
+        } else {
+            loginError.textContent = "Usuario o contraseña incorrectos.";
+        }
+    });
+
+    // ==== MANEJO DE TAREAS ====
+    var taskForm = document.getElementById("task-form");
+    var taskError = document.getElementById("task-error");
+    var taskTableBody = document.getElementById("task-table-body");
+    var contadorTareas = 0;
+
+    // Palabras ofensivas que se quieren evitar (medida ética)
+    var palabrasProhibidas = ["tonto", "idiota", "estúpido", "feo"];
+
+    function contienePalabrasOfensivas(texto) {
+        var textoMin = texto.toLowerCase();
+        for (var i = 0; i < palabrasProhibidas.length; i++) {
+            if (textoMin.includes(palabrasProhibidas[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    taskForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        taskError.textContent = "";
+
+        var titulo = document.getElementById("titulo").value.trim();
+        var descripcion = document.getElementById("descripcion").value.trim();
+        var responsable = document.getElementById("responsable").value.trim();
+        var estado = document.getElementById("estado").value;
+
+        // Validación básica de campos vacíos
+        if (titulo === "" || responsable === "") {
+            taskError.textContent = "El título y el responsable son obligatorios.";
+            return;
+        }
+
+        // Validación ética: evitar palabras ofensivas en título y descripción
+        if (contienePalabrasOfensivas(titulo) || contienePalabrasOfensivas(descripcion)) {
+            taskError.textContent = "No se permiten palabras ofensivas en el título o la descripción.";
+            return;
+        }
+
+        // Si pasa las validaciones, se agrega la tarea a la tabla
+        contadorTareas++;
+        var fila = document.createElement("tr");
+
+        var celdaId = document.createElement("td");
+        celdaId.textContent = contadorTareas;
+        fila.appendChild(celdaId);
+
+        var celdaTitulo = document.createElement("td");
+        celdaTitulo.textContent = titulo;
+        fila.appendChild(celdaTitulo);
+
+        var celdaDesc = document.createElement("td");
+        celdaDesc.textContent = descripcion;
+        fila.appendChild(celdaDesc);
+
+        var celdaResp = document.createElement("td");
+        celdaResp.textContent = responsable;
+        fila.appendChild(celdaResp);
+
+        var celdaEstado = document.createElement("td");
+        var spanEstado = document.createElement("span");
+        spanEstado.textContent = estado;
+
+        if (estado === "Pendiente") {
+            spanEstado.className = "badge badge-pendiente";
+        } else if (estado === "En proceso") {
+            spanEstado.className = "badge badge-proceso";
+        } else {
+            spanEstado.className = "badge badge-completo";
+        }
+        celdaEstado.appendChild(spanEstado);
+        fila.appendChild(celdaEstado);
+
+        taskTableBody.appendChild(fila);
+
+        // Limpiar campos del formulario
+        document.getElementById("titulo").value = "";
+        document.getElementById("descripcion").value = "";
+        document.getElementById("responsable").value = "";
+        document.getElementById("estado").value = "Pendiente";
+    });
+</script>
+</body>
+</html>
