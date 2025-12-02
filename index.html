@@ -70,7 +70,7 @@
             color: white;
             font-weight: bold;
         }
-
+        
         button:hover {
             opacity: 0.9;
         }
@@ -100,7 +100,7 @@
         }
 
         th, td {
-            border: 1px solid #cbd5e1;
+            border: 1px solid #cbd5e2;
             padding: 8px;
             text-align: left;
             font-size: 0.9rem;
@@ -129,30 +129,49 @@
 </header>
 
 <main>
-    <!-- ================= SECCIÓN LOGIN ================= -->
+    <!-- ================= SECCIÓN LOGIN / REGISTRO ================= -->
     <section id="login-section" class="section">
-        <h2>Inicio de sesión</h2>
-        <p class="info">
-            Para este proyecto se usa un login sencillo con usuario y contraseña fijos,
-            solo para identificar al equipo (no hay base de datos real).
-        </p>
+        <h2>Inicia sesión o crea una cuenta</h2>
+        <p class="info">Usa una cuenta para acceder al tablero. Si no tienes una, puedes crearla aquí mismo. Las credenciales se almacenan localmente en tu navegador (solo demo).</p>
 
         <form id="login-form">
             <label for="username">Usuario</label>
-            <input type="text" id="username" placeholder="Ej: equipo1" required>
+            <input type="text" id="username" placeholder="Tu nombre de usuario" required>
 
             <label for="password">Contraseña</label>
-            <input type="password" id="password" placeholder="Ej: 1234" required>
+            <input type="password" id="password" placeholder="Tu contraseña" required>
 
             <button type="submit">Entrar</button>
-            <p class="info">Usuario demo: <b>equipo1</b> | Contraseña: <b>1234</b></p>
             <p id="login-error" class="error"></p>
+        </form>
+
+        <p class="info">¿No tienes cuenta? <a href="#" id="show-signup">Crear una cuenta</a></p>
+
+        <form id="signup-form" class="hidden">
+            <h3>Crear cuenta</h3>
+            <label for="signup-username">Usuario</label>
+            <input type="text" id="signup-username" placeholder="Elige un usuario" required>
+
+            <label for="signup-password">Contraseña</label>
+            <input type="password" id="signup-password" placeholder="Contraseña (mínimo 6 caracteres)" required>
+
+            <label for="signup-password-confirm">Confirmar contraseña</label>
+            <input type="password" id="signup-password-confirm" placeholder="Repite la contraseña" required>
+
+            <button type="submit">Crear cuenta</button>
+            <p id="signup-error" class="error"></p>
+            <p id="signup-success" class="info"></p>
+            <p><a href="#" id="show-login">Volver al inicio de sesión</a></p>
         </form>
     </section>
 
     <!-- ================ SECCIÓN APLICACIÓN ================ -->
     <section id="app-section" class="section hidden">
         <h2>Tablero de tareas / mensajes</h2>
+        <div class="info" style="display:flex;justify-content:space-between;align-items:center;">
+            <span id="welcome-user"></span>
+            <button id="logout-btn" class="hidden" style="background:#ef4444;">Cerrar sesión</button>
+        </div>
 
         <!-- Aviso de privacidad (Medida ética) -->
         <div class="privacy-box">
@@ -210,33 +229,158 @@
 </main>
 
 <script>
-    // ==== LOGIN BÁSICO (medida de seguridad: autenticación simple) ====
-    var LOGIN_USER = "equipo1";
-    var LOGIN_PASS = "1234";
+    // ==== AUTENTICACIÓN: registro / inicio de sesión usando localStorage (demo) ====
+    const loginForm = document.getElementById("login-form");
+    const signupForm = document.getElementById("signup-form");
+    const loginError = document.getElementById("login-error");
+    const signupError = document.getElementById("signup-error");
+    const signupSuccess = document.getElementById("signup-success");
+    const loginSection = document.getElementById("login-section");
+    const appSection = document.getElementById("app-section");
+    const welcomeUser = document.getElementById("welcome-user");
+    const logoutBtn = document.getElementById("logout-btn");
+    const showSignup = document.getElementById("show-signup");
+    const showLogin = document.getElementById("show-login");
 
-    var loginForm = document.getElementById("login-form");
-    var loginError = document.getElementById("login-error");
-    var loginSection = document.getElementById("login-section");
-    var appSection = document.getElementById("app-section");
+    // Hash de contraseña con SHA-256 (SubtleCrypto)
+    async function hashPassword(password) {
+        const enc = new TextEncoder();
+        const data = enc.encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
 
-    loginForm.addEventListener("submit", function (event) {
-        event.preventDefault();
-
-        var username = document.getElementById("username").value.trim();
-        var password = document.getElementById("password").value.trim();
-
-        if (username === LOGIN_USER && password === LOGIN_PASS) {
-            // Simulación de "cifrado" de contraseña (solo demostración, no real)
-            var fakeHash = btoa(password); // convierte a base64
-            console.log("Contraseña cifrada (simulada, solo demo):", fakeHash);
-
-            loginError.textContent = "";
-            loginSection.classList.add("hidden");
-            appSection.classList.remove("hidden");
-        } else {
-            loginError.textContent = "Usuario o contraseña incorrectos.";
+    function getUsers() {
+        try {
+            return JSON.parse(localStorage.getItem('cs_users') || '{}');
+        } catch (e) {
+            return {};
         }
+    }
+
+    function saveUsers(users) {
+        localStorage.setItem('cs_users', JSON.stringify(users));
+    }
+
+    function setSession(username) { localStorage.setItem('cs_session', username); }
+    function clearSession() { localStorage.removeItem('cs_session'); }
+    function getSession() { return localStorage.getItem('cs_session'); }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+        loginError.textContent = '';
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+            loginError.textContent = 'Usuario y contraseña son obligatorios.';
+            return;
+        }
+
+        const users = getUsers();
+        if (!users[username]) {
+            loginError.textContent = 'Usuario no encontrado. Crea una cuenta primero.';
+            return;
+        }
+
+        const hashed = await hashPassword(password);
+        if (hashed === users[username]) {
+            setSession(username);
+            showApp(username);
+        } else {
+            loginError.textContent = 'Usuario o contraseña incorrectos.';
+        }
+    }
+
+    async function handleSignup(event) {
+        event.preventDefault();
+        signupError.textContent = '';
+        signupSuccess.textContent = '';
+
+        const username = document.getElementById('signup-username').value.trim();
+        const password = document.getElementById('signup-password').value;
+        const confirm = document.getElementById('signup-password-confirm').value;
+
+        if (!username || !password || !confirm) {
+            signupError.textContent = 'Todos los campos son obligatorios.';
+            return;
+        }
+        if (password.length < 6) {
+            signupError.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+            return;
+        }
+        if (password !== confirm) {
+            signupError.textContent = 'Las contraseñas no coinciden.';
+            return;
+        }
+
+        const users = getUsers();
+        if (users[username]) {
+            signupError.textContent = 'El usuario ya existe. Elige otro.';
+            return;
+        }
+
+        const hashed = await hashPassword(password);
+        users[username] = hashed;
+        saveUsers(users);
+
+        // Auto-login después de crear la cuenta
+        setSession(username);
+        signupSuccess.textContent = 'Cuenta creada correctamente. Iniciando sesión...';
+        showApp(username);
+    }
+
+    function showApp(username) {
+        loginSection.classList.add('hidden');
+        document.getElementById('signup-form').classList.add('hidden');
+        appSection.classList.remove('hidden');
+        welcomeUser.textContent = 'Conectado como: ' + username;
+        logoutBtn.classList.remove('hidden');
+    }
+
+    function logout() {
+        clearSession();
+        appSection.classList.add('hidden');
+        loginSection.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+        welcomeUser.textContent = '';
+        // limpiar campos
+        document.getElementById('password').value = '';
+    }
+
+    showSignup.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.getElementById('signup-form').classList.remove('hidden');
+        document.getElementById('login-form').classList.add('hidden');
+        loginError.textContent = '';
+        signupError.textContent = '';
+        signupSuccess.textContent = '';
     });
+
+    showLogin.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.getElementById('signup-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    });
+
+    loginForm.addEventListener('submit', handleLogin);
+    signupForm.addEventListener('submit', handleSignup);
+    logoutBtn.addEventListener('click', logout);
+
+    // Mantener sesión si existe
+    (function () {
+        const sessionUser = getSession();
+        if (sessionUser) {
+            const users = getUsers();
+            if (users[sessionUser]) {
+                showApp(sessionUser);
+            } else {
+                clearSession();
+            }
+        }
+    })();
 
     // ==== MANEJO DE TAREAS ====
     var taskForm = document.getElementById("task-form");
